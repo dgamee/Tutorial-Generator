@@ -122,7 +122,11 @@ with st.container():
 
 # Platform Selection
 st.markdown("### Output Format")
-tutorial_blog = st.checkbox("📝 Generate Blog-style Tutorial", value=True)
+col1, col2 = st.columns(2)
+with col1:
+    tutorial_blog = st.checkbox("Generate Tutorial Blog", value=False)
+with col2:
+    summary_platform = st.checkbox("Generate Summary", value=False)
 
 # Generate Button
 generate_clicked = st.button(" Generate Content", type="primary", disabled=not video_id)
@@ -132,6 +136,7 @@ async def run_agent(video_id, query, platforms, api_key):
     with st.spinner(" Fetching video ..."):
         try:
             transcript = get_transcript(video_id)
+            st.success("Video fetched successfully!")
             if not transcript:
                 return None, "No video found"
             transcript_text = format_transcript(transcript)
@@ -142,7 +147,13 @@ async def run_agent(video_id, query, platforms, api_key):
         try:
             tasks = [generate_social_media_post(transcript, model_name, platform, api_key, query) for platform in platforms]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            posts = [{"platform": platform, "content": res if not isinstance(res, Exception) else f"[Error: {res}]"} for platform, res in zip(platforms, results)]
+            posts = []
+            for platform, res in zip(platforms, results):
+                if isinstance(res, Exception):
+                    content = f"[Error generating for {platform}: {res}]"
+                else:
+                    content = res
+                posts.append({"platform": platform, "content": content})
             return posts, None
         except Exception as e:
             return None, str(e)
@@ -150,10 +161,15 @@ async def run_agent(video_id, query, platforms, api_key):
 # Process on click
 if generate_clicked:
     processed_video_id = extract_video_id(video_id) or video_id
-    selected_platforms = ["Tutorial Blog"] if tutorial_blog else []
+    selected_platforms = [] 
+    
+    if tutorial_blog :
+        selected_platforms.append("Tutorial Blog")
+    if summary_platform:
+        selected_platforms.append("Summary")
 
     if not selected_platforms:
-        st.error("Please select at least one platform.")
+        st.error("Please select at least one output format.")
     else:
         result, error = asyncio.run(run_agent(processed_video_id, query, selected_platforms, gemini_api_key))
         if error:
@@ -163,15 +179,25 @@ if generate_clicked:
                 platform = post["platform"]
                 content = post["content"]
 
-                final_post = summary = blog = ""
+                final_post = summary = takeaways = blog = ""
                 try:
-                    final_match = re.search(r"Final Post:\s*(.*)", content)
-                    summary_match = re.search(r"Summary:\s*(.*)", content)
-                    blog_match = re.search(r"Blog:\s*(.*)", content, re.DOTALL)
+                    if platform.lower() == "summary":
+                        # summary_match = re.search(r"Summary\s*(.*?)\s*Key Takeaways\s*(.*?)$", content, re.DOTALL)
+                        summary_match = re.search(r"Summary\s*:\s*(.*?)\s*Key Takeaways\s*:\s*(.*?)$", content, re.DOTALL | re.IGNORECASE)
+                        if summary_match:
+                            summary = summary_match.group(1).strip()
+                            takeaways = summary_match.group(2).strip()
+                        else:
+                            summary = content.strip()
+                            takeaways = "No key takeaways extracted due to formatting issues."
+                    else:
+                        final_match = re.search(r"Final Post:\s*(.*)", content)
+                        summary_match = re.search(r"Summary:\s*(.*)", content)
+                        blog_match = re.search(r"Blog:\s*(.*)", content, re.DOTALL)
 
-                    final_post = final_match.group(1).strip() if final_match else ""
-                    summary = summary_match.group(1).strip() if summary_match else ""
-                    blog = blog_match.group(1).strip() if blog_match else content.strip()
+                        final_post = final_match.group(1).strip() if final_match else ""
+                        summary = summary_match.group(1).strip() if summary_match else ""
+                        blog = blog_match.group(1).strip() if blog_match else content.strip()
                 except:
                     blog = content.strip()
 
@@ -180,6 +206,13 @@ if generate_clicked:
                         st.markdown("#### 📝 Blog-style Tutorial")
                         st.markdown(blog, unsafe_allow_html=False)
                         st.download_button("📥 Download Blog Post", data=blog, file_name="tutorial_blog.md", mime="text/markdown", use_container_width=False)
+                    elif platform.lower() == "summary":
+                        st.markdown("### 📝 Summary")
+                        st.markdown(summary, unsafe_allow_html=False)
+                        st.markdown("### 🔑 Key Takeaways")
+                        st.markdown(takeaways, unsafe_allow_html=False)
+                        download_content = f"Summary:\n{summary}\n\nKey Takeaways:\n{takeaways}"
+                        st.download_button(label="📥 Download Summary", data=download_content, file_name="content_hub_summary.md", mime="text/markdown")
                     else:
                         st.text_area("🪧 Final Post", final_post, height=100)
                         if summary:
@@ -199,4 +232,4 @@ if generate_clicked:
 
 # Footer
 st.markdown("---")
-st.markdown("🔧 Built with ❤️ by **Aniekan Inyang**")
+st.markdown("⚙️ 🔧 Built with ❤️ by **Aniekan Inyang**")

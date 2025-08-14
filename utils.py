@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 import streamlit as st
-from prompts import build_social_media_prompt, build_tutorial_prompt
+from prompts import build_social_media_prompt, build_tutorial_prompt, build_merged_summary_prompt
 
 
 
@@ -84,6 +84,8 @@ async def generate_social_media_post(video_transcript: str, model_name: str, soc
         raise ValueError("Missing or empty video transcript")
     if social_media_platform.lower() == "tutorial blog":
         prompt = build_tutorial_prompt(video_transcript, social_media_platform, user_query)
+    elif social_media_platform.lower() == "summary":
+        prompt = build_merged_summary_prompt(video_transcript, social_media_platform, user_query)
     else:
         prompt = build_social_media_prompt(video_transcript, social_media_platform, user_query)
 

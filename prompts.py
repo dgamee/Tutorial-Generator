@@ -273,3 +273,82 @@ Produce a **clear, engaging, technically precise, copy-paste-ready Markdown tuto
 - Delivers immediate value and is ready for publishing on the specified platform.
 Output **only** the final, validated tutorial in Markdown—no drafts, scores, or internal notes.
 """
+
+def build_merged_summary_prompt(video_transcript: str, platform: str, user_query: Optional[str] = None) -> str:
+    query_instruction = f"\n\nCustom Instruction:\n{user_query}" if user_query else ""
+    platform="Educational"
+
+    return f"""
+You are a professional summarizer and content strategist. Your goal is to extract a human-sounding summary and specific takeaways from the following YouTube video transcript, suitable for publication on {platform} (e.g., blog, newsletter, educational recap).
+
+---
+
+###  Task Overview
+1. Generate an engaging summary (3–5 sentences).
+2. Extract 3–5 key takeaways (1–2 lines each).
+3. Ensure all content is derived **only from the transcript** with zero invented details.
+
+---
+
+### ✨ Style & Tone Guidelines
+- Write like a smart, clear human — friendly and informative.
+- Avoid robotic phrasing (e.g., “In this video...”).
+- Rephrase in your own words; do not quote directly.
+- Match the platform tone:
+  - Blog: Conversational, with a curiosity-driven hook.
+  - Newsletter: Snappy, with a clear call-to-action.
+  - Educational: Formal, precise for academic audiences.
+
+---
+
+###  Accuracy Rules
+- Use only facts explicitly stated in the transcript — do not invent or guess.
+- If the transcript is unclear or <50 words, output: “Transcript too short or unclear for reliable summary.”
+- If the transcript exceeds 1,000,000 tokens, prioritize the most relevant sections and note: “Summary based on partial transcript.”
+
+---
+
+###  Output Format
+**Summary:**  
+<3–5 sentence paragraph capturing the main topic and purpose>
+
+**Key Takeaways:**  
+- <Specific, practical, or novel insight, 1–2 lines, tied to transcript>  
+- <Repeat for 3–5 distinct points>  
+
+---
+
+###  Quality Assurance Loop
+1. Generate two candidate outputs strictly following the rules.
+2. Score each (1–10) for:
+   - **Fidelity**: Matches transcript without fabrication (50%).
+   - **Clarity**: Clear and engaging for the audience (30%).
+   - **Platform Fit**: Aligns with {platform}’s tone (20%).
+3. Select the highest-scoring output; if <9/10, refine until ≥9/10.
+4. Create a mapping table to verify alignment:
+   | Transcript Segment | Output Insight |
+   |--------------------|----------------|
+   | ...                | ...            |
+5. Flag any unmapped transcript segments for review and regenerate if needed.
+
+---
+
+### Error Recovery
+- For unclear transcripts, derive a 2-sentence summary from the most prominent theme and 3 inferred takeaways, noting: “Limited transcript context.”
+- For API failures (e.g., rate limits), retry once after 10 seconds. If unresolved, output:
+  **Summary:** Limited transcript data; key themes summarized briefly.
+  **Key Takeaways:**
+  - Inferred insight 1 based on context.
+  - Inferred insight 2 based on context.
+  - Inferred insight 3 based on context.
+  Note: API error; limited output generated.
+
+---
+
+### TRANSCRIPT:
+{video_transcript}
+
+{query_instruction}
+
+---
+"""
