@@ -19,7 +19,7 @@ st.session_state.gemini_api_key = key
 my_api_key = os.getenv("GEMINI_API_KEY_STR")
 
 TEMPERATURE = 0.7  # Default temperature for Gemini API
-VALID_PLATFORMS = ["Twitter", "Facebook", "Instagram", "LinkedIn", "Tutorial Blog"]
+VALID_PLATFORMS = ["Twitter", "Facebook", "Instagram", "LinkedIn", "Tutorial Blog", "Summary"]
 
 def extract_video_id(url):
     """Extract YouTube video ID from full link or short link."""
@@ -50,6 +50,8 @@ def preview_prompt(transcript: str, platform: str, user_query: Optional[str] = N
     """Returns the exact prompt that would be sent to Ollama for preview/debug purposes."""
     if platform.lower() == "tutorial blog":
         return build_tutorial_prompt(transcript, platform, user_query)
+    elif platform.lower() == "summary":
+        return build_merged_summary_prompt(transcript, platform, user_query)
     return build_social_media_prompt(transcript, platform, user_query)
 
 
