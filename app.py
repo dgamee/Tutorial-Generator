@@ -7,14 +7,14 @@ from utils import extract_video_id, get_transcript, generate_social_media_post, 
 
 # Load API Key uncomment to use locally
 load_dotenv()
-key = os.getenv("GEMINI_API_KEY")
-st.session_state.gemini_api_key = key
-gemini_api_key = st.session_state.gemini_api_key
+# key = os.getenv("GEMINI_API_KEY")
+# st.session_state.gemini_api_key = key
+# gemini_api_key = st.session_state.gemini_api_key
 
 #comment this out when using locally
-# gem_api_key = st.secrets["GEMINI_API_KEY"]
-# st.session_state.gemini_api_key = gem_api_key
-# gemini_api_key = st.session_state.gemini_api_key
+gem_api_key = st.secrets["GEMINI_API_KEY"]
+st.session_state.gemini_api_key = gem_api_key
+gemini_api_key = st.session_state.gemini_api_key
 
 # Set page config
 st.set_page_config(page_title="🎥 Tutorial Generator", page_icon="💡", layout="wide")
