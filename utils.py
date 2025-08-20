@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 import streamlit as st
-from prompts import build_social_media_prompt, build_tutorial_prompt, build_merged_summary_prompt
+from prompts import build_social_media_prompt, build_tutorial_prompt, build_merged_summary_prompt, build_note_taking_prompt
 
 
 
@@ -19,7 +19,7 @@ st.session_state.gemini_api_key = key
 my_api_key = os.getenv("GEMINI_API_KEY_STR")
 
 TEMPERATURE = 0.7  # Default temperature for Gemini API
-VALID_PLATFORMS = ["Twitter", "Facebook", "Instagram", "LinkedIn", "Tutorial Blog", "Summary"]
+VALID_PLATFORMS = ["Twitter", "Facebook", "Instagram", "LinkedIn", "Tutorial Blog", "Summary", "Note Taking"]
 
 def extract_video_id(url):
     """Extract YouTube video ID from full link or short link."""
@@ -88,6 +88,8 @@ async def generate_social_media_post(video_transcript: str, model_name: str, soc
         prompt = build_tutorial_prompt(video_transcript, social_media_platform, user_query)
     elif social_media_platform.lower() == "summary":
         prompt = build_merged_summary_prompt(video_transcript, social_media_platform, user_query)
+    elif social_media_platform.lower() == "note taking":
+        prompt = build_note_taking_prompt(video_transcript, social_media_platform, user_query)
     else:
         prompt = build_social_media_prompt(video_transcript, social_media_platform, user_query)
 

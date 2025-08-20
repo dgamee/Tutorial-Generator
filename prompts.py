@@ -284,8 +284,8 @@ You are a professional summarizer and content strategist. Your goal is to extrac
 ---
 
 ###  Task Overview
-1. Generate an engaging summary (3–5 sentences).
-2. Extract 3–5 key takeaways (1–2 lines each).
+1. Generate an engaging summary (5–8 sentences).
+2. Extract all key takeaways (1-2 lines each).
 3. Ensure all content is derived **only from the transcript** with zero invented details.
 
 ---
@@ -301,6 +301,15 @@ You are a professional summarizer and content strategist. Your goal is to extrac
 
 ---
 
+## **STRICT DO NOTS**:
+- No summarizing or skipping steps.
+- No references to “transcript” or “video”.
+- No adding best practices or tips not in transcript.
+- No inventing features, steps, or commands.
+- No changing code meaning.
+
+---
+
 ###  Accuracy Rules
 - Use only facts explicitly stated in the transcript — do not invent or guess.
 - If the transcript is unclear or <50 words, output: “Transcript too short or unclear for reliable summary.”
@@ -310,11 +319,11 @@ You are a professional summarizer and content strategist. Your goal is to extrac
 
 ###  Output Format
 **Summary:**  
-<3–5 sentence paragraph capturing the main topic and purpose>
+<5–8 sentence paragraph capturing the main topic and purpose>
 
 **Key Takeaways:**  
 - <Specific, practical, or novel insight, 1–2 lines, tied to transcript>  
-- <Repeat for 3–5 distinct points>  
+- <Repeat for all distinct points>  
 
 ---
 
@@ -346,6 +355,166 @@ You are a professional summarizer and content strategist. Your goal is to extrac
 ---
 
 ### TRANSCRIPT:
+{video_transcript}
+
+{query_instruction}
+
+---
+"""
+
+def build_note_taking_prompt(video_transcript: str, platform: str, user_query: Optional[str] = None) -> str:
+    query_instruction = f"\n\nCustom Instruction:\n{user_query}" if user_query else ""
+
+    return f"""
+You are an expert human note-taker tasked with creating **comprehensive, structured, and natural-sounding notes** based on the provided YouTube transcript. Imagine you are **watching the video live** and writing high-quality notes in real time for personal learning, review, or professional publication on {platform} (e.g., personal notes, blog, educational recap).
+
+Your output should be in **clean Markdown format** for direct use in blogs, knowledge bases, or Markdown-compatible platforms, avoiding artifacts like `**` around headers.
+
+---
+
+### 🎯 Goal
+- Capture the **flow of ideas** and **structure of the video** clearly and completely.
+- Capture all meaningful points and transitions in the video.
+- Do not limit the number of notes — extract every distinct idea, shift, or insight that can stand alone.
+- Prioritize completeness over brevity while still writing clean, digestible notes.
+- Use only what is explicitly said in the transcript. **Do not fabricate or guess**.
+- Maintain natural, thoughtful tone; avoid summarizing prematurely or combining unrelated points.
+
+---
+
+### 🧠 Style & Tone Guidelines
+- Write in **first-person observational style**, like someone actively taking notes (e.g., “This point stood out to me…”).
+- Be clear, structured, and occasionally reflective (e.g., “This really drives the point home”).
+- Use a mix of short paragraphs and bullet points, organized with subheadings (e.g., Introduction, Key Concepts, Final Thoughts).
+- Include timestamps if available (e.g., “[00:01:23]”), otherwise use logical subheadings based on content shifts.
+- Use Markdown formatting:
+  - `##` for major sections (Summary, Main Notes)
+  - `###` for sub-sections or transitions
+  - Bullet points (`-`) for lists or key points
+  - Code blocks (```) only for technical content
+- Match the platform tone and structure:
+  - Personal Notes: Concise, bullet-heavy, actionable (6–10 bullets, minimal paragraphs).
+  - Blog: Engaging, narrative-driven with 2–3 short paragraphs and 3–5 bullets.
+  - Educational: Formal, detailed, precise with 3–4 paragraphs and 2–4 bullets.
+- Avoid robotic phrasing (e.g., “In this video...”).
+- Keep the tone human, clean, and easy to skim.
+
+---
+
+## **STRICT DO NOTS**:
+- No summarizing or skipping steps.
+- No references to “transcript” or “video”.
+- No adding best practices or tips not in transcript.
+- No inventing features, steps, or commands.
+- No changing code meaning.
+
+---
+
+### 📄 Output Format
+```markdown
+## Summary
+<2–3 sentence overview of the video topic and purpose>
+
+## Main Notes
+<Full sequence of structured notes, covering all ideas expressed in the transcript. Each shift in topic should have its own subheading or timestamp.>
+
+### [00:00:45] Opening Thoughts
+- The speaker emphasizes mindset as key to overcoming setbacks.
+- Notes a coach’s quote: “Your limits are mostly mental.” This feels like a core idea.
+
+### [00:02:30] Key Concepts
+- **Focus**: Staying concentrated helps push through challenges.
+- **Recovery**: Sleep and active rest are essential.
+- **Community**: Leaning on others makes success sustainable.
+
+### [00:05:10] Personal Story
+The speaker shares a burnout experience, missing early warning signs. This story really hit home for me, highlighting the need for self-awareness.
+
+### Final Thoughts
+The speaker recaps the importance of balancing self-awareness with a support system. This ties the talk together nicely.
+```
+
+---
+
+### 🛡 Accuracy Rules
+- Use only facts explicitly stated in the transcript — **do not invent or guess**.
+- If the transcript is unclear or <50 words, output:
+  ```markdown
+  ## Summary
+  Transcript too short or unclear for reliable notes.
+  ## Main Notes
+  - Unable to extract specific points due to limited content.
+  ```
+- If the transcript exceeds 1,000,000 tokens, prioritize the most relevant sections and note:
+  ```markdown
+  ## Summary
+  Notes based on selected sections of the transcript due to length.
+  ```
+
+---
+
+### 🔍 Quality Assurance Loop
+1. Generate two candidate outputs strictly following the rules.
+2. Score each (1–10) for:
+   - **Fidelity**: Matches transcript without fabrication (50%).
+   - **Clarity**: Clear and useful for the audience (30%).
+   - **Platform Fit**: Aligns with {platform}’s tone and structure (20%).
+3. Select the highest-scoring output; if <9/10, refine until ≥9/10.
+4. Create a mapping table to verify alignment:
+   | Transcript Segment | Timestamp | Output Note |
+   |--------------------|-----------|-------------|
+   | ...                | ...       | ...         |
+5. Flag any unmapped transcript segments and regenerate if needed.
+
+---
+
+### ⚠️ Error Handling
+- For unclear transcripts, derive a 2-sentence summary and 3 key notes based on the most prominent theme, noting:
+  ```markdown
+  ## Summary
+  Limited transcript context; key themes noted briefly.
+  ## Main Notes
+  - Inferred note 1 based on the most prominent theme.
+  - Inferred note 2 based on the most prominent theme.
+  - Inferred note 3 based on the most prominent theme.
+  ```
+- For API failures (e.g., rate limits), retry once after 10 seconds. If unresolved, output:
+  ```markdown
+  ## Summary
+  Transcript not fully available due to API issues. Limited insights captured.
+  ## Main Notes
+  - Inferred note 1 based on available context.
+  - Inferred note 2 based on available context.
+  - Inferred note 3 based on available context.
+  ```
+
+---
+
+### ✏️ Example
+```markdown
+## Summary
+The speaker explores resilience, emphasizing mindset, recovery, and community as key pillars. They share a personal burnout story to highlight self-awareness, making this a compelling talk.
+
+## Main Notes
+### [00:00:45] Opening Thoughts
+- The speaker stresses mindset as critical for overcoming setbacks.
+- Notes a coach’s quote: “Your limits are mostly mental.” This feels like a core idea to me.
+
+### [00:02:30] Three Pillars of Resilience
+- **Focus**: Staying concentrated helps push through challenges.
+- **Recovery**: Sleep and active rest are essential for long-term success.
+- **Community**: Leaning on others makes success sustainable.
+
+### [00:05:10] Personal Story
+The speaker shares a burnout experience, missing early warning signs. This story really hit home for me, showing why we need to listen to our bodies.
+
+### [00:06:00] Final Thoughts
+The speaker recaps the importance of balancing self-awareness with a support system. This ties the talk together nicely, leaving a strong impression.
+```
+
+---
+
+### 🎧 TRANSCRIPT:
 {video_transcript}
 
 {query_instruction}

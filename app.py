@@ -99,8 +99,7 @@ st.markdown("""
 
 # Header
 st.markdown('<div class="main-title"><img src="https://img.icons8.com/fluency/96/youtube-play.png" alt="logo"> AI-Powered Tutorial Generator</div>', unsafe_allow_html=True)
-st.markdown("Automatically convert YouTube videos into blog style tutorials with the power of AI ")
-
+st.markdown("Automatically generate blog style tutorials, summaries, or notes from YouTube video with the power of AI ")
 # Warning if no API key
 if not gemini_api_key:
     st.warning("Please enter a valid Google AI Studio API key to generate content. Get one for free at https://aistudio.google.com.")
@@ -122,11 +121,13 @@ with st.container():
 
 # Platform Selection
 st.markdown("### Output Format")
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     tutorial_blog = st.checkbox("Generate Tutorial Blog", value=False)
 with col2:
     summary_platform = st.checkbox("Generate Summary", value=False)
+with col3:
+    note_taking = st.checkbox("Generate Notes", value=False)
 
 # Generate Button
 generate_clicked = st.button(" Generate Content", type="primary", disabled=not video_id)
@@ -167,6 +168,8 @@ if generate_clicked:
         selected_platforms.append("Tutorial Blog")
     if summary_platform:
         selected_platforms.append("Summary")
+    if note_taking:
+        selected_platforms.append("Note Taking")
 
     if not selected_platforms:
         st.error("Please select at least one output format.")
@@ -179,7 +182,7 @@ if generate_clicked:
                 platform = post["platform"]
                 content = post["content"]
 
-                final_post = summary = takeaways = blog = ""
+                final_post = summary = takeaways = blog = notes_content = ""
                 try:
                     if platform.lower() == "summary":
                         # summary_match = re.search(r"Summary\s*(.*?)\s*Key Takeaways\s*(.*?)$", content, re.DOTALL)
@@ -190,6 +193,15 @@ if generate_clicked:
                         else:
                             summary = content.strip()
                             takeaways = "No key takeaways extracted due to formatting issues."
+                    elif platform.lower() == "note taking":
+                        # note_match = re.search(r"Notes\s*:\s*(.*)", content, re.DOTALL)
+                        notes_match = re.search(r"Summary\s*:?\s*(.*?)\s*Main Notes\s*:?\s*(.*?)$", content, re.DOTALL | re.IGNORECASE)
+                        if notes_match:
+                            summary = notes_match.group(1).strip().replace("**", "")
+                            notes_content = notes_match.group(2).strip().replace("**", "")
+                        else:
+                            summary = content.strip()
+                            notes_content = "No key notes extracted due to formatting issues."
                     else:
                         final_match = re.search(r"Final Post:\s*(.*)", content)
                         summary_match = re.search(r"Summary:\s*(.*)", content)
@@ -200,6 +212,7 @@ if generate_clicked:
                         blog = blog_match.group(1).strip() if blog_match else content.strip()
                 except:
                     blog = content.strip()
+                    summary = blog = ""
 
                 with st.expander(f"📄 {platform} Output", expanded=True):
                     if platform.lower() == "tutorial blog":
@@ -213,6 +226,13 @@ if generate_clicked:
                         st.markdown(takeaways, unsafe_allow_html=False)
                         download_content = f"Summary:\n{summary}\n\nKey Takeaways:\n{takeaways}"
                         st.download_button(label="📥 Download Summary", data=download_content, file_name="content_hub_summary.md", mime="text/markdown")
+                    elif platform.lower() == "note taking":
+                        st.markdown("### 📝 Notes")
+                        st.markdown(summary, unsafe_allow_html=False)
+                        st.markdown("###  Main Notes")
+                        st.markdown(notes_content, unsafe_allow_html=False)
+                        download_content = f"Summary:\n{summary}\n\nMain Notes:\n{notes_content}"
+                        st.download_button(label="📥 Download Notes", data=download_content, file_name="notes.md", mime="text/markdown")
                     else:
                         st.text_area("🪧 Final Post", final_post, height=100)
                         if summary:
